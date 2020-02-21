@@ -2,7 +2,6 @@ package com.valentyna.vanet.service;
 
 import com.valentyna.vanet.graph.AdjacencyVertices;
 import com.valentyna.vanet.graph.Graph;
-import com.valentyna.vanet.graph.GraphBuilder;
 import com.valentyna.vanet.graph.Vertex;
 import com.valentyna.vanet.routing.RoutingPathData;
 import com.valentyna.vanet.routing.RoutingTable;
@@ -16,26 +15,32 @@ import java.util.stream.Collectors;
 public class GraphService {
 
     private Graph graph;
+
+    private Vertex source;
+    private Vertex destination;
+
     private List<RoutingTable> routingTables = new ArrayList<>();
-    private AdjacencyVertices firstVertices;
-    private AdjacencyVertices secondVertices;
+
+    private AdjacencyVertices firstVerticesLayer;
+    private AdjacencyVertices secondVerticesLayer;
     private List<Vertex> queue = new ArrayList<>();
 
+    public GraphService(Graph graph, Vertex source, Vertex destination) {
+        this.graph = graph;
+        this.source = source;
+        this.destination = destination;
+    }
 
-    public void run() {
-        initGraph();
+    public List<RoutingTable> generateRoutingInformationInNetworkSwitches() {
 
-        Vertex source = new Vertex("v1");
-        Vertex destination = new Vertex("v16");
+        this.firstVerticesLayer = new AdjacencyVertices(1, Set.of(destination), new HashSet<>());
+        this.secondVerticesLayer = getNextAdjacencyVertices(firstVerticesLayer);
 
-        this.firstVertices = new AdjacencyVertices(1, Set.of(destination), new HashSet<>());
-        this.secondVertices = getNextAdjacencyVertices(firstVertices);
+        secondVerticesLayer.getCurrentVertices().forEach(v -> createFirstRoutingTables(v, destination, source));
 
-        secondVertices.getCurrentVertices().forEach(v -> createFirstRoutingTables(secondVertices, v, destination, source));
+        secondVerticesLayer.getCurrentVertices().forEach(v -> updateRoutingTable(secondVerticesLayer, v, destination, source));
 
-        secondVertices.getCurrentVertices().forEach(v -> updateRoutingTable(secondVertices, v, destination, source));
-
-        AdjacencyVertices nextVertices = getNextAdjacencyVertices(secondVertices);
+        AdjacencyVertices nextVertices = getNextAdjacencyVertices(secondVerticesLayer);
 
         while (!nextVertices.getPreviousVertices().contains(source)) {
             AdjacencyVertices finalNextVertices = nextVertices;
@@ -49,13 +54,12 @@ public class GraphService {
             nextVertices = getNextAdjacencyVertices(nextVertices);
         }
 
-        RoutingTable sourceRoutingTable = getRoutingTableByControllerId(getControllerId(source));
-        List<Vertex> shortestPath = getShortestPathInRoutingTable(sourceRoutingTable, source);
-        String result = shortestPath.stream().map(Vertex::getLabel).collect(Collectors.joining(", "));
-        System.out.println(result);
+        printPathFromSourceToDestination();
+
+        return routingTables;
     }
 
-    private void createFirstRoutingTables(AdjacencyVertices nextAdjacencyVertices, Vertex currentVertex, Vertex destination, Vertex source) {
+    private void createFirstRoutingTables(Vertex currentVertex, Vertex destination, Vertex source) {
         RoutingTable routingTable = new RoutingTable();
 
         routingTable.setControllerId(getControllerId(currentVertex));
@@ -228,11 +232,6 @@ public class GraphService {
         return null;
     }
 
-    private void initGraph() {
-        GraphBuilder graphBuilder = new GraphBuilder();
-        this.graph = graphBuilder.build();
-    }
-
     private AdjacencyVertices getNextAdjacencyVertices(AdjacencyVertices previousSet) {
         int nextNumber = previousSet.getNumber() + 1;
         Set<Vertex> nextVertices = new HashSet<>();
@@ -244,5 +243,12 @@ public class GraphService {
 
     private int getControllerId(Vertex vertex) {
         return Integer.valueOf(vertex.getLabel().substring(1));
+    }
+
+    private void printPathFromSourceToDestination() {
+        RoutingTable sourceRoutingTable = getRoutingTableByControllerId(getControllerId(this.source));
+        List<Vertex> shortestPath = getShortestPathInRoutingTable(sourceRoutingTable, this.source);
+        String result = shortestPath.stream().map(Vertex::getLabel).collect(Collectors.joining(", "));
+        System.out.println(result);
     }
 }
