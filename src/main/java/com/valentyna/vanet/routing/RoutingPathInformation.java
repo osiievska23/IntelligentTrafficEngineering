@@ -12,7 +12,7 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class RoutingPathData {
+public class RoutingPathInformation {
 
     private Vertex adjacentTop;
     private double weight;

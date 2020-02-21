@@ -11,9 +11,9 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class RoutingTable {
+public class SwitchRoutingTable {
 
     private int controllerId;
-    private List<RoutingPathData> routingPathData;
+    private List<RoutingPathInformation> routingPathData;
 
 }
