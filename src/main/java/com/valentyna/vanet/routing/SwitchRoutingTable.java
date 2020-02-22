@@ -14,6 +14,6 @@ import java.util.List;
 public class SwitchRoutingTable {
 
     private int controllerId;
-    private List<RoutingPathInformation> routingPathData;
+    private List<RoutingPathInformation> routingPathInformations;
 
 }

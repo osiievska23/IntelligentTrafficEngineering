@@ -6,13 +6,16 @@ import com.valentyna.vanet.graph.Vertex;
 import com.valentyna.vanet.routing.RoutingPathInformation;
 import com.valentyna.vanet.routing.SwitchRoutingTable;
 
-import java.sql.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class GraphService {
 
@@ -20,9 +23,7 @@ public class GraphService {
 
     private Vertex source;
     private Vertex destination;
-
     private List<SwitchRoutingTable> switchRoutingTables = new ArrayList<>();
-
     private List<Vertex> queue = new ArrayList<>();
 
     public GraphService(Graph graph, Vertex source, Vertex destination) {
@@ -36,12 +37,22 @@ public class GraphService {
         AdjacencyVertices firstVerticesLayer = new AdjacencyVertices(1, Set.of(this.destination), new HashSet<>());
         AdjacencyVertices secondVerticesLayer = getNextAdjacencyVertices(firstVerticesLayer);
 
-        generateSwitchRoutingTablesForSecondVerticesLayer(secondVerticesLayer);
+        secondVerticesLayer.getCurrentVertices().forEach(v -> createNewRoutingTable(firstVerticesLayer, v));
         AdjacencyVertices nextVertices = getNextAdjacencyVertices(secondVerticesLayer);
 
         while (sourceNotReached(nextVertices)) {
 
-            gatherRoutingInformationFromNextVerticesSet(nextVertices);
+            for (Vertex currentVertex : nextVertices.getCurrentVertices()) {
+                gatherRoutingInformationFromNextVerticesSet(nextVertices, currentVertex);
+            }
+
+            while (!queue.isEmpty()) {
+                Vertex currentVertex = queue.get(0);
+
+                gatherRoutingInformationFromNextVerticesSet(nextVertices, currentVertex);
+
+                queue.remove(currentVertex);
+            }
             nextVertices = getNextAdjacencyVertices(nextVertices);
         }
 
@@ -50,73 +61,39 @@ public class GraphService {
         return switchRoutingTables;
     }
 
-    private void gatherRoutingInformationFromNextVerticesSet(AdjacencyVertices adjacencyVerticesSet) {
-        adjacencyVerticesSet.getCurrentVertices().forEach(v -> updateRoutingTable(adjacencyVerticesSet, v));
-
-        while (!queue.isEmpty()) {
-            updateRoutingTable(adjacencyVerticesSet, queue.get(0));
-            queue.remove(0);
+    private void gatherRoutingInformationFromNextVerticesSet(AdjacencyVertices adjacencyVerticesSet, Vertex currentVertex) {
+        if (tableExist(getControllerId(currentVertex))) {
+            updateRoutingTable(adjacencyVerticesSet, currentVertex);
+        } else {
+            createNewRoutingTable(adjacencyVerticesSet, currentVertex);
         }
-    }
-
-    private void generateSwitchRoutingTablesForSecondVerticesLayer(AdjacencyVertices secondVerticesLayer) {
-        secondVerticesLayer.getCurrentVertices().forEach(v -> createFirstRoutingTables(v));
-    }
-
-    private RoutingPathInformation createRoutingPathInformation(Vertex adjacentTop, List<Vertex> path) {
-        RoutingPathInformation routingPathInformation = new RoutingPathInformation();
-
-        routingPathInformation.setAdjacentTop(adjacentTop);
-        routingPathInformation.setWeight(getPathEdgeWeight(path));
-        routingPathInformation.setPath(path);
-        routingPathInformation.setDestination(this.destination);
-
-        return routingPathInformation;
     }
 
     private void createNewRoutingTable(AdjacencyVertices adjacencyVertices, Vertex currentVertex) {
         SwitchRoutingTable switchRoutingTable = new SwitchRoutingTable();
 
         switchRoutingTable.setControllerId(getControllerId(currentVertex));
-        List<RoutingPathInformation> newRoutingPathInformationList = calculateRoutingPathData(adjacencyVertices, currentVertex);
-        switchRoutingTable.setRoutingPathData(newRoutingPathInformationList);
-
-        switchRoutingTables.add(switchRoutingTable);
-    }
-
-    private void createFirstRoutingTables(Vertex currentVertex) {
-        SwitchRoutingTable switchRoutingTable = new SwitchRoutingTable();
-
-        switchRoutingTable.setControllerId(getControllerId(currentVertex));
-
-        List<RoutingPathInformation> pathDataList = new ArrayList<>();
-
-        List<Vertex> path = Arrays.asList(currentVertex, destination);
-
-        RoutingPathInformation routingPathInformation = createRoutingPathInformation(currentVertex, path);
-
-        pathDataList.add(routingPathInformation);
-
-        switchRoutingTable.setRoutingPathData(pathDataList);
+        List<RoutingPathInformation> routingPathInformationList = createRoutingPathInformationList(adjacencyVertices, currentVertex);
+        switchRoutingTable.setRoutingPathInformations(routingPathInformationList);
 
         switchRoutingTables.add(switchRoutingTable);
     }
 
     private void updateRoutingTable(AdjacencyVertices adjacencyVertices, Vertex currentVertex) {
-
-        if (!tableExist(getControllerId(currentVertex))) {
-
-            createNewRoutingTable(adjacencyVertices, currentVertex);
-        } else {
-
-            SwitchRoutingTable switchRoutingTable = getRoutingTableByControllerId(getControllerId(currentVertex));
-            List<RoutingPathInformation> newRoutingPathInformationList = calculateRoutingPathData(adjacencyVertices, currentVertex);
-            switchRoutingTable.getRoutingPathData().addAll(newRoutingPathInformationList);
-        }
+        SwitchRoutingTable switchRoutingTable = getRoutingTableByControllerId(getControllerId(currentVertex));
+        List<RoutingPathInformation> newRoutingPathInformationList = createRoutingPathInformationList(adjacencyVertices, currentVertex);
+        switchRoutingTable.getRoutingPathInformations().addAll(newRoutingPathInformationList);
     }
 
-    private List<RoutingPathInformation> calculateRoutingPathData(AdjacencyVertices adjacencyVertices, Vertex currentVertex) {
-        List<RoutingPathInformation> dataList = new ArrayList<>();
+    private List<RoutingPathInformation> createRoutingPathInformationList(AdjacencyVertices adjacencyVertices, Vertex currentVertex) {
+        List<RoutingPathInformation> pathInfoList = new ArrayList<>();
+
+        if (adjacencyVertices.getCurrentVertices().contains(this.destination)) {
+            List<Vertex> path = Arrays.asList(currentVertex, this.destination);
+            RoutingPathInformation routingPathInformation = createRoutingPathInformation(currentVertex, path);
+            pathInfoList.add(routingPathInformation);
+            return pathInfoList;
+        }
 
         Set<Vertex> possibleAdjVertex = new HashSet<>();
         possibleAdjVertex.addAll(adjacencyVertices.getCurrentVertices());
@@ -124,14 +101,13 @@ public class GraphService {
 
         for (Vertex adjVertex : possibleAdjVertex) {
 
-            if (vertexCanBePartOfPath(currentVertex, adjVertex) && currentVertexHasNotPathDataWithThisAdjVertex(currentVertex, adjVertex)) {
+            if (vertexCanBePartOfPath(currentVertex, adjVertex)) {
 
                 if (tableExist(getControllerId(adjVertex))) {
 
-                    List<Vertex> path = getShortestPathFromAdjVertexToDestination(getControllerId(adjVertex), currentVertex);
-
+                    List<Vertex> path = getShortestPathFromVertexToDestination(currentVertex, getControllerId(adjVertex));
                     RoutingPathInformation routingPathInformation = createRoutingPathInformation(adjVertex, path);
-                    dataList.add(routingPathInformation);
+                    pathInfoList.add(routingPathInformation);
 
                 } else {
 
@@ -140,108 +116,101 @@ public class GraphService {
             }
         }
 
-        return dataList;
+        return pathInfoList;
     }
 
-    private boolean currentVertexHasNotPathDataWithThisAdjVertex(Vertex currentVertex, Vertex adjVertex) {
-        SwitchRoutingTable switchRoutingTable = getRoutingTableByControllerId(getControllerId(currentVertex));
+    private RoutingPathInformation createRoutingPathInformation(Vertex adjacentTop, List<Vertex> path) {
+        RoutingPathInformation routingPathInformation = new RoutingPathInformation();
 
-        if (switchRoutingTable == null) {
-            return true;
-        }
+        routingPathInformation.setAdjacentTop(adjacentTop);
+        routingPathInformation.setWeight(getPathWeight(path));
+        routingPathInformation.setPath(path);
+        routingPathInformation.setDestination(this.destination);
 
-        for (RoutingPathInformation pathData : switchRoutingTable.getRoutingPathData()) {
-
-            if (pathData.getAdjacentTop().equals(adjVertex)) {
-                return false;
-            }
-        }
-
-        return true;
+        return routingPathInformation;
     }
 
-    private boolean vertexCanBePartOfPath(Vertex currentVertex, Vertex adjVertex) {
-        return !adjVertex.equals(currentVertex) && !adjVertex.equals(this.destination) && this.graph.getAdjacencyVertices().get(currentVertex).contains(adjVertex);
+    private double getPathWeight(List<Vertex> path) {
+        return IntStream.range(0, path.size() - 1)
+                .mapToDouble(i -> this.graph.getEdgesWeights().get(path.get(i).getLabel() + "-" + path.get(i + 1).getLabel()))
+                .sum();
     }
 
-    private double getPathEdgeWeight(List<Vertex> path) {
-        double total = 0;
-
-        for (int i = 0; i < path.size() - 1; i++) {
-            String key = path.get(i).getLabel() + "-" + path.get(i + 1).getLabel();
-            double weight = this.graph.getEdgesWeights().get(key);
-            total += weight;
-        }
-
-        return total;
-    }
-
-    private List<Vertex> getShortestPathFromAdjVertexToDestination(int adjControllerId, Vertex currentVertex) {
+    private List<Vertex> getShortestPathFromVertexToDestination(Vertex currentVertex, int adjControllerId) {
         List<Vertex> result = new ArrayList<>();
         result.add(currentVertex);
 
-        if (tableExist(adjControllerId)) {
-
-            SwitchRoutingTable switchRoutingTable = getRoutingTableByControllerId(adjControllerId);
-            result.addAll(getShortestPathInRoutingTable(switchRoutingTable, currentVertex));
-        }
+        SwitchRoutingTable switchRoutingTable = getRoutingTableByControllerId(adjControllerId);
+        result.addAll(getShortestPathInRoutingTable(switchRoutingTable, currentVertex));
 
         return result;
     }
 
     private List<Vertex> getShortestPathInRoutingTable(SwitchRoutingTable switchRoutingTable, Vertex currentVertex) {
-        List<Vertex> result = new ArrayList<>();
-
-        double min = 100000000;
-
-        for (RoutingPathInformation pathData : switchRoutingTable.getRoutingPathData()) {
-            if (pathData.getWeight() < min && !pathData.getAdjacentTop().equals(currentVertex)) {
-                min = pathData.getWeight();
-                result = pathData.getPath();
-            }
-        }
-        return result;
+        return switchRoutingTable.getRoutingPathInformations().stream()
+                .filter(i -> !isCurrentVertex(i.getAdjacentTop(), currentVertex))
+                .min(Comparator.comparing(RoutingPathInformation::getWeight))
+                .map(RoutingPathInformation::getPath)
+                .orElse(Collections.emptyList());
     }
 
     private boolean tableExist(int adjControllerId) {
-        for (SwitchRoutingTable table : switchRoutingTables) {
-
-            if (table.getControllerId() == adjControllerId) {
-                return true;
-            }
-        }
-
-        return false;
+        return switchRoutingTables.stream()
+                .anyMatch(t -> t.getControllerId() == adjControllerId);
     }
 
     private SwitchRoutingTable getRoutingTableByControllerId(int adjControllerId) {
-        for (SwitchRoutingTable table : switchRoutingTables) {
-
-            if (table.getControllerId() == adjControllerId) {
-                return table;
-            }
-        }
-        return null;
+        return switchRoutingTables.stream()
+                .filter(t -> t.getControllerId() == adjControllerId)
+                .findAny()
+                .orElse(null);
     }
 
     private AdjacencyVertices getNextAdjacencyVertices(AdjacencyVertices previousSet) {
-        int nextAdjacencyVerticesLayerNumber = previousSet.getNumber() + 1;
+        int nextNumber = previousSet.getNumber() + 1;
 
-        Set<Vertex> nextVertices = new HashSet<>();
-        previousSet.getCurrentVertices().forEach(vertex -> nextVertices.addAll(this.graph.getAdjacencyVertices().get(vertex)));
+        Set<Vertex> nextVertices = previousSet.getCurrentVertices().stream()
+                .map(v -> this.graph.getAdjacencyVertices().get(v))
+                .flatMap(Collection::stream)
+                .collect(Collectors.toSet());
 
         nextVertices.removeAll(previousSet.getCurrentVertices());
         nextVertices.removeAll(previousSet.getPreviousVertices());
 
-        return new AdjacencyVertices(nextAdjacencyVerticesLayerNumber, nextVertices, previousSet.getCurrentVertices());
+        return new AdjacencyVertices(nextNumber, nextVertices, previousSet.getCurrentVertices());
     }
 
-    private int getControllerId(Vertex vertex) {
-        return Integer.valueOf(vertex.getLabel().substring(1));
+    private boolean vertexCanBePartOfPath(Vertex currentVertex, Vertex vertex) {
+        return !isCurrentVertex(currentVertex, vertex)
+                && !isVertexDestination(vertex)
+                && isAdjacencyVertex(currentVertex, vertex)
+                && !isVisitedAdjacencyVertex(currentVertex, vertex);
+    }
+
+    private boolean isVisitedAdjacencyVertex(Vertex currentVertex, Vertex adjVertex) {
+        SwitchRoutingTable switchRoutingTable = getRoutingTableByControllerId(getControllerId(currentVertex));
+        return switchRoutingTable != null && switchRoutingTable.getRoutingPathInformations().stream()
+                .anyMatch(i -> i.getAdjacentTop().equals(adjVertex));
+    }
+
+    private boolean isAdjacencyVertex(Vertex currentVertex, Vertex vertex) {
+        return this.graph.getAdjacencyVertices().get(currentVertex).contains(vertex);
+    }
+
+    private boolean isVertexDestination(Vertex adjVertex) {
+        return adjVertex.equals(this.destination);
+    }
+
+    private boolean isCurrentVertex(Vertex currentVertex, Vertex adjVertex) {
+        return adjVertex.equals(currentVertex);
     }
 
     private boolean sourceNotReached(AdjacencyVertices nextVertices) {
         return !nextVertices.getPreviousVertices().contains(source);
+    }
+
+    private int getControllerId(Vertex vertex) {
+        return Integer.valueOf(vertex.getLabel().substring(1));
     }
 
     private void printPathFromSourceToDestination() {
