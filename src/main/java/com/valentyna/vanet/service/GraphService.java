@@ -90,7 +90,7 @@ public class GraphService {
 
         if (adjacencyVertices.getCurrentVertices().contains(this.destination)) {
             List<Vertex> path = Arrays.asList(currentVertex, this.destination);
-            RoutingPathInformation routingPathInformation = createRoutingPathInformation(currentVertex, path);
+            RoutingPathInformation routingPathInformation = createRoutingPathInformation(this.destination, path);
             pathInfoList.add(routingPathInformation);
             return pathInfoList;
         }
