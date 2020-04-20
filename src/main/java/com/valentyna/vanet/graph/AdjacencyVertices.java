@@ -11,7 +11,7 @@ import java.util.Set;
 @AllArgsConstructor
 public class AdjacencyVertices {
 
-    private int number;
+    private int id;
     private Set<Vertex> currentVertices;
     private Set<Vertex> previousVertices;
 }

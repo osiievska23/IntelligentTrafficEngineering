@@ -41,7 +41,7 @@ public class GraphBuilder {
 
         graph.addEdge("v10", "v13", 0.2);
 
-        graph.addEdge("v11", "v12", 0.2);
+        graph.addEdge("v11", "v12", 0.1);
         graph.addEdge("v11", "v15", 0.4);
 
         graph.addEdge("v12", "v15", 0.2);

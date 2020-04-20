@@ -10,6 +10,7 @@
 
     <properties>
         <lombok.version>1.18.12</lombok.version>
+        <org.jgrapht.version>0.7.3</org.jgrapht.version>
         <maven-plugin.version>2.3.2</maven-plugin.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
@@ -20,6 +21,33 @@
             <artifactId>lombok</artifactId>
             <version>${lombok.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.jgrapht</groupId>
+            <artifactId>jgrapht-jdk1.5</artifactId>
+            <version>${org.jgrapht.version}</version>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/net.sf.jung/jung-graph-impl -->
+        <dependency>
+            <groupId>net.sf.jung</groupId>
+            <artifactId>jung-graph-impl</artifactId>
+            <version>2.0.1</version>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/net.sf.jung/jung-visualization -->
+        <dependency>
+            <groupId>net.sf.jung</groupId>
+            <artifactId>jung-visualization</artifactId>
+            <version>2.0</version>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/jgraph/jgraph -->
+        <dependency>
+            <groupId>jgraph</groupId>
+            <artifactId>jgraph</artifactId>
+            <version>5.13.0.0</version>
+        </dependency>
+
     </dependencies>
 
     <build>
