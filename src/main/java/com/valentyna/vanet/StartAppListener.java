@@ -3,21 +3,34 @@ package com.valentyna.vanet;
 import com.valentyna.vanet.graph.Graph;
 import com.valentyna.vanet.graph.GraphBuilder;
 import com.valentyna.vanet.graph.Vertex;
+import com.valentyna.vanet.panel.PlotGraph;
 import com.valentyna.vanet.service.GraphService;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.ApplicationListener;
+import org.springframework.stereotype.Component;
 
-public class Runner {
+@Component
+public class StartAppListener implements ApplicationListener<ApplicationReadyEvent> {
 
-    public static void main(String[] args) {
+    private final GraphService graphService;
+    private final PlotGraph plotGraph;
+
+    public StartAppListener(GraphService graphService) {
+        this.graphService = graphService;
+        this.plotGraph = new PlotGraph();
+    }
+
+    @Override
+    public void onApplicationEvent(ApplicationReadyEvent applicationReadyEvent) {
         GraphBuilder builder = new GraphBuilder();
 
         Graph graph = builder.buildFirst();
-        Vertex source = new Vertex("v11");
+        Vertex source = new Vertex("v1");
         Vertex destination = new Vertex("v16");
 
-        GraphService graphService = new GraphService(graph, source, destination);
+        graphService.init(graph, source, destination);
         graphService.generateRoutingInformationInNetworkSwitches();
 
-//        PlotGraph plotGraph = new PlotGraph();
 //        plotGraph.setGraphData(graph.getAdjacencyVertices().entrySet().stream()
 //                .map(e -> e.getKey().getLabel())
 //                .collect(Collectors.toList()));
