@@ -1,12 +1,12 @@
-package com.valentyna.vanet;
+package com.valentyna.intelligent.traffic.engineering;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class Vanet {
+public class IntelligentTrafficEngineering {
 
     public static void main(String[] args) {
-        SpringApplication.run(Vanet.class, args);
+        SpringApplication.run(IntelligentTrafficEngineering.class, args);
     }
 }

@@ -1,22 +1,22 @@
-package com.valentyna.vanet.routing;
+package com.valentyna.intelligent.traffic.engineering.domen;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import javax.persistence.Column;
-import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
-import java.util.List;
 
 @Entity
 @Table(name = "routing_data")
 @Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -27,7 +27,7 @@ public class RoutingPathData {
     @Column(name = "id")
     private Long id;
 
-    @Column(name = "controlerId")
+    @Column(name = "controllerId")
     private int controllerId;
 
     @Column(name = "adjacent_vertex")
@@ -39,9 +39,12 @@ public class RoutingPathData {
     @Column(name = "path_loading")
     private double loading;
 
+    @Column(name = "source")
+    private String source;
+
     @Column(name = "destination")
     private String destination;
 
-    @ElementCollection
-    private List<String> path;
+    @Column(name = "path")
+    private String path;
 }

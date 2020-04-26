@@ -1,4 +1,4 @@
-package com.valentyna.vanet.panel;
+package com.valentyna.intelligent.traffic.engineering.panel;
 
 import edu.uci.ics.jung.algorithms.layout.FRLayout;
 import edu.uci.ics.jung.algorithms.layout.Layout;
@@ -15,20 +15,21 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Set;
 
 @Component
 public class PlotGraph {
 
-    private int edgeCount_Directed = 0;   // This works with the inner MyEdge class
     private List<String> distinctVertex = new LinkedList<>();
     private List<String> sourceVertex = new LinkedList<>();
     private List<String> targetVertex = new LinkedList<>();
     private List<Double> edgeWeight = new LinkedList<>();
-    private List<List<String>> pathFromSourceToDestination = new ArrayList<>();
+    private List<Set<String>> pathFromSourceToDestination = new ArrayList<>();
+    private List<String> unreachableVertexes = new ArrayList<>();
 
     public void setGraphData(List<String> vertexes) {
         for (int i = 1; i <= 16; i++) {
@@ -84,8 +85,14 @@ public class PlotGraph {
     public void setPathFromSourceToDestination(String path) {
         String[] vertexes = path.split(", ");
         for (int i = 0; i < vertexes.length - 1; i++) {
-            pathFromSourceToDestination.add(Arrays.asList(vertexes[i], vertexes[i + 1]));
+            Set<String> set = new HashSet<>();
+            set.addAll(Arrays.asList(vertexes[i], vertexes[i + 1]));
+            pathFromSourceToDestination.add(set);
         }
+    }
+
+    public void setUnreachableVertexes(List<String> unreachableVertexes) {
+        this.unreachableVertexes = unreachableVertexes;
     }
 
     public void setGraphEdge(String first, String second, double weight) {
@@ -97,10 +104,10 @@ public class PlotGraph {
     public void visualizeDirectedGraph() {
         Graph<MyNode, MyLink> graph = new DirectedSparseGraph();
 
-        Hashtable<String, MyNode> Graph_Nodes = new Hashtable<String, PlotGraph.MyNode>();
-        LinkedList<MyNode> Source_Node = new LinkedList<PlotGraph.MyNode>();
-        LinkedList<MyNode> Target_Node = new LinkedList<PlotGraph.MyNode>();
-        LinkedList<MyNode> Graph_Nodes_Only = new LinkedList<PlotGraph.MyNode>();
+        Hashtable<String, MyNode> Graph_Nodes = new Hashtable<>();
+        LinkedList<MyNode> Source_Node = new LinkedList<>();
+        LinkedList<MyNode> Target_Node = new LinkedList<>();
+        LinkedList<MyNode> Graph_Nodes_Only = new LinkedList<>();
 
         for (int i = 0; i < distinctVertex.size(); i++) {
             String node_name = distinctVertex.get(i);
@@ -117,7 +124,7 @@ public class PlotGraph {
 
         //Now add nodes and edges to the graph
         for (int i = 0; i < edgeWeight.size(); i++) {
-            graph.addEdge(new MyLink(new MyNode[]{Source_Node.get(i), Target_Node.get(i)}, edgeWeight.get(i)), Source_Node.get(i), Target_Node.get(i), EdgeType.DIRECTED);
+            graph.addEdge(new MyLink(edgeWeight.get(i), new MyNode[]{Source_Node.get(i), Target_Node.get(i)}), Source_Node.get(i), Target_Node.get(i), EdgeType.DIRECTED);
         }
 
         Layout<MyNode, MyLink> layout = new FRLayout<>(graph);
@@ -132,6 +139,13 @@ public class PlotGraph {
             }
         };
 
+        Transformer<MyNode, Paint> vertexColorTransformer = new Transformer<MyNode, Paint>() {
+            @Override
+            public Paint transform(MyNode myNode) {
+                return unreachableVertexes.contains(myNode.getId()) ? Color.white : Color.blue;
+            }
+        };
+
         Transformer<MyLink, String> edgeLabelTransformer = new Transformer<MyLink, String>() {
             public String transform(MyLink edge) {
                 return String.valueOf(edge.getWeight());
@@ -142,7 +156,7 @@ public class PlotGraph {
         Transformer<MyLink, Paint> edgePaintTransformer = new Transformer<MyLink, Paint>() {
             @Override
             public Paint transform(MyLink myLink) {
-                return pathFromSourceToDestination.contains(myLink.getVertexes()) ? Color.red : Color.black;
+                return pathFromSourceToDestination.contains(myLink.getVertexes()) ? Color.blue : Color.black;
             }
         };
 
@@ -157,54 +171,12 @@ public class PlotGraph {
         viz.getRenderContext().setEdgeDrawPaintTransformer(edgePaintTransformer);
         viz.getRenderContext().setEdgeArrowPredicate(edgeArrowPredicate);
         viz.getRenderContext().setVertexLabelTransformer(vertexLabelTransformer);
+        viz.getRenderContext().setVertexFillPaintTransformer(vertexColorTransformer);
 
         JFrame frame = new JFrame("Graph Visualization");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.getContentPane().add(viz);
         frame.pack();
         frame.setVisible(true);
-    }
-
-    class MyNode {
-
-        private String id;
-
-        public MyNode(String id) {
-            this.id = id;
-        }
-
-        public String getId() {
-            return id;
-        }
-
-//        public String Node_Property() {
-//            String node_prop = id;
-//            return (node_prop);
-//        }
-    }
-
-    class MyLink {
-
-        private double weight;
-        private MyNode[] vertexes;
-        private int id;
-
-        public MyLink(MyNode[] vertexes, double weight) {
-            this.id = edgeCount_Directed++;
-            this.vertexes = vertexes;
-            this.weight = weight;
-        }
-
-        public String toString() {
-            return "E" + id;
-        }
-
-        public double getWeight() {
-            return weight;
-        }
-
-        public List<String> getVertexes() {
-            return Arrays.stream(vertexes).map(MyNode::getId).collect(Collectors.toList());
-        }
     }
 }

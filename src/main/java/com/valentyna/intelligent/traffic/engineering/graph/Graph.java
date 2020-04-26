@@ -1,4 +1,4 @@
-package com.valentyna.vanet.graph;
+package com.valentyna.intelligent.traffic.engineering.graph;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;

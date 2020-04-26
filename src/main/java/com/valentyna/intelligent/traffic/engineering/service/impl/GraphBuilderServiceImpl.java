@@ -1,8 +1,14 @@
-package com.valentyna.vanet.graph;
+package com.valentyna.intelligent.traffic.engineering.service.impl;
 
-public class GraphBuilder {
+import com.valentyna.intelligent.traffic.engineering.graph.Graph;
+import com.valentyna.intelligent.traffic.engineering.service.GraphBuilderService;
+import org.springframework.stereotype.Service;
 
-    public Graph buildFirst() {
+@Service
+public class GraphBuilderServiceImpl implements GraphBuilderService {
+
+    @Override
+    public Graph buildFirstGraph() {
         Graph graph = new Graph();
 
         for (int i = 1; i <= 16; i++) {
@@ -57,7 +63,8 @@ public class GraphBuilder {
         return graph;
     }
 
-    public Graph buildSecond() {
+    @Override
+    public Graph buildSecondGraph() {
         Graph graph = new Graph();
 
         for (int i = 0; i <= 20; i++) {
