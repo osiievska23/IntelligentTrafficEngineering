@@ -4,6 +4,7 @@ import com.valentyna.intelligent.traffic.engineering.domen.RoutingPathData;
 import com.valentyna.intelligent.traffic.engineering.graph.AdjacencyVertices;
 import com.valentyna.intelligent.traffic.engineering.graph.Graph;
 import com.valentyna.intelligent.traffic.engineering.graph.Vertex;
+import com.valentyna.intelligent.traffic.engineering.panel.GraphData;
 import com.valentyna.intelligent.traffic.engineering.repository.RoutingPathDataRepository;
 import com.valentyna.intelligent.traffic.engineering.service.GraphBuilderService;
 import com.valentyna.intelligent.traffic.engineering.service.RoutingAnalysisService;
@@ -26,13 +27,14 @@ public class RoutingAnalysisServiceImpl implements RoutingAnalysisService {
     private Vertex source;
     private Vertex destination;
     private List<Vertex> queue = new ArrayList<>();
+    private GraphData graphData = new GraphData();
 
     private final RoutingPathDataRepository routingDataRepository;
 
     public RoutingAnalysisServiceImpl(RoutingPathDataRepository routingDataRepository,
                                       GraphBuilderService graphBuilderService) {
         this.routingDataRepository = routingDataRepository;
-        this.graph = graphBuilderService.buildFirstGraph();
+        this.graph = graphBuilderService.buildGraph(graphData.getVerticesAmount(), graphData.getGraphData());
     }
 
     public void init(Vertex source, Vertex destination) {

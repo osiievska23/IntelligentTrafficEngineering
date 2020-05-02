@@ -4,7 +4,5 @@ import com.valentyna.intelligent.traffic.engineering.graph.Graph;
 
 public interface GraphBuilderService {
 
-    Graph buildFirstGraph();
-
-    Graph buildSecondGraph();
+    Graph buildGraph(int amountOfVertices, String[][] graphData);
 }

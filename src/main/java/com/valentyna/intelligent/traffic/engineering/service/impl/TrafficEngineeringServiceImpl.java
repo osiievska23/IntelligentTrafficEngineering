@@ -3,6 +3,7 @@ package com.valentyna.intelligent.traffic.engineering.service.impl;
 import com.valentyna.intelligent.traffic.engineering.domen.RoutingPathData;
 import com.valentyna.intelligent.traffic.engineering.graph.Graph;
 import com.valentyna.intelligent.traffic.engineering.graph.Vertex;
+import com.valentyna.intelligent.traffic.engineering.panel.GraphData;
 import com.valentyna.intelligent.traffic.engineering.repository.RoutingPathDataRepository;
 import com.valentyna.intelligent.traffic.engineering.service.GraphBuilderService;
 import com.valentyna.intelligent.traffic.engineering.service.LoadingAnalysisService;
@@ -23,6 +24,8 @@ public class TrafficEngineeringServiceImpl implements TrafficEngineeringService 
 
     private final RoutingPathDataRepository routingPathDataRepository;
 
+    private GraphData graphData = new GraphData();
+
     private final Graph graph;
 
     public TrafficEngineeringServiceImpl(LoadingAnalysisService loadingAnalysisService,
@@ -32,11 +35,11 @@ public class TrafficEngineeringServiceImpl implements TrafficEngineeringService 
         this.loadingAnalysisService = loadingAnalysisService;
         this.routingAnalysisService = routingAnalysisService;
         this.routingPathDataRepository = routingPathDataRepository;
-        this.graph = graphBuilderService.buildFirstGraph();
+        this.graph = graphBuilderService.buildGraph(graphData.getVerticesAmount(), graphData.getGraphData());
     }
 
     @Override
-    public void getPathFromSourceToDestination(Vertex source, Vertex destination) {
+    public String getPathFromSourceToDestination(Vertex source, Vertex destination) {
         String path = findPathInController(source, destination);
 
         RoutingPathData routingPathData = routingPathDataRepository.findByPath(path).orElse(null);
@@ -51,6 +54,7 @@ public class TrafficEngineeringServiceImpl implements TrafficEngineeringService 
         routingPathDataRepository.save(routingPathData);
 
         System.out.println(path);
+        return path;
     }
 
     public String findPathInController(Vertex source, Vertex destination) {

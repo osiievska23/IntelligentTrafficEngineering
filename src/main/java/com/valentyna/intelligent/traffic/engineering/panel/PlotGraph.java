@@ -9,7 +9,6 @@ import edu.uci.ics.jung.graph.util.EdgeType;
 import edu.uci.ics.jung.visualization.BasicVisualizationServer;
 import org.apache.commons.collections15.Predicate;
 import org.apache.commons.collections15.Transformer;
-import org.springframework.stereotype.Component;
 
 import javax.swing.*;
 import java.awt.*;
@@ -20,8 +19,8 @@ import java.util.Hashtable;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
-@Component
 public class PlotGraph {
 
     private List<String> distinctVertex = new LinkedList<>();
@@ -31,74 +30,25 @@ public class PlotGraph {
     private List<Set<String>> pathFromSourceToDestination = new ArrayList<>();
     private List<String> unreachableVertexes = new ArrayList<>();
 
-    public void setGraphData(List<String> vertexes) {
-        for (int i = 1; i <= 16; i++) {
+    public void setGraphData(int amountOfVertices, String[][] graphData) {
+        for (int i = 1; i <= amountOfVertices; i++) {
             distinctVertex.add("v" + i);
         }
 
-        setGraphEdge("v1", "v2", 0.3);
-        setGraphEdge("v1", "v3", 0.1);
-        setGraphEdge("v1", "v4", 0.4);
-
-        setGraphEdge("v2", "v3", 0.2);
-        setGraphEdge("v2", "v5", 0.2);
-        setGraphEdge("v2", "v6", 0.3);
-
-        setGraphEdge("v3", "v4", 0.2);
-        setGraphEdge("v3", "v6", 0.3);
-        setGraphEdge("v3", "v7", 0.2);
-
-        setGraphEdge("v4", "v8", 0.3);
-
-        setGraphEdge("v5", "v6", 0.2);
-        setGraphEdge("v5", "v9", 0.6);
-
-        setGraphEdge("v6", "v10", 0.2);
-
-        setGraphEdge("v7", "v8", 0.3);
-        setGraphEdge("v7", "v10", 0.6);
-        setGraphEdge("v7", "v11", 0.3);
-
-        setGraphEdge("v8", "v11", 0.6);
-        setGraphEdge("v8", "v12", 0.6);
-
-        setGraphEdge("v9", "v10", 0.3);
-        setGraphEdge("v9", "v13", 0.6);
-        setGraphEdge("v9", "v14", 0.5);
-
-        setGraphEdge("v10", "v13", 0.2);
-
-        setGraphEdge("v11", "v12", 0.2);
-        setGraphEdge("v11", "v15", 0.4);
-
-        setGraphEdge("v12", "v15", 0.2);
-
-        setGraphEdge("v13", "v14", 0.3);
-        setGraphEdge("v13", "v15", 0.3);
-        setGraphEdge("v13", "v16", 0.2);
-
-        setGraphEdge("v14", "v16", 0.6);
-
-        setGraphEdge("v15", "v16", 0.3);
+        for (String[] data : graphData) {
+            sourceVertex.add(data[0]);
+            targetVertex.add(data[1]);
+            edgeWeight.add(Double.parseDouble(data[2]));
+        }
     }
 
     public void setPathFromSourceToDestination(String path) {
-        String[] vertexes = path.split(", ");
+        String[] vertexes = path.split(" -> ");
         for (int i = 0; i < vertexes.length - 1; i++) {
             Set<String> set = new HashSet<>();
             set.addAll(Arrays.asList(vertexes[i], vertexes[i + 1]));
             pathFromSourceToDestination.add(set);
         }
-    }
-
-    public void setUnreachableVertexes(List<String> unreachableVertexes) {
-        this.unreachableVertexes = unreachableVertexes;
-    }
-
-    public void setGraphEdge(String first, String second, double weight) {
-        sourceVertex.add(first);
-        targetVertex.add(second);
-        edgeWeight.add(weight);
     }
 
     public void visualizeDirectedGraph() {
@@ -142,7 +92,8 @@ public class PlotGraph {
         Transformer<MyNode, Paint> vertexColorTransformer = new Transformer<MyNode, Paint>() {
             @Override
             public Paint transform(MyNode myNode) {
-                return unreachableVertexes.contains(myNode.getId()) ? Color.white : Color.blue;
+                return pathFromSourceToDestination.stream().flatMap(Set::stream).collect(Collectors.toSet()).contains(myNode.getId())
+                        ? Color.red : Color.blue;
             }
         };
 
@@ -156,7 +107,7 @@ public class PlotGraph {
         Transformer<MyLink, Paint> edgePaintTransformer = new Transformer<MyLink, Paint>() {
             @Override
             public Paint transform(MyLink myLink) {
-                return pathFromSourceToDestination.contains(myLink.getVertexes()) ? Color.blue : Color.black;
+                return pathFromSourceToDestination.contains(myLink.getVertexes()) ? Color.red : Color.black;
             }
         };
 

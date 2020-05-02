@@ -2,6 +2,7 @@ package com.valentyna.intelligent.traffic.engineering.service.impl;
 
 import com.valentyna.intelligent.traffic.engineering.domen.RoutingPathData;
 import com.valentyna.intelligent.traffic.engineering.graph.Graph;
+import com.valentyna.intelligent.traffic.engineering.panel.GraphData;
 import com.valentyna.intelligent.traffic.engineering.repository.RoutingPathDataRepository;
 import com.valentyna.intelligent.traffic.engineering.service.GraphBuilderService;
 import com.valentyna.intelligent.traffic.engineering.service.LoadingAnalysisService;
@@ -21,11 +22,13 @@ public class LoadingAnalysisServiceImpl implements LoadingAnalysisService {
 
     private Map<String, Double> chanelLoadings = new HashMap<>();
 
+    private GraphData graphData = new GraphData();
+
     private Graph graph;
 
     public LoadingAnalysisServiceImpl(RoutingPathDataRepository routingPathDataRepository, GraphBuilderService graphBuilderService) {
         this.routingPathDataRepository = routingPathDataRepository;
-        graph = graphBuilderService.buildFirstGraph();
+        graph = graphBuilderService.buildGraph(graphData.getVerticesAmount(), graphData.getGraphData());
     }
 
     @Override
