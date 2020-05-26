@@ -6,5 +6,5 @@ public interface RoutingAnalysisService {
 
     void performRoutingDataAnalysis(Vertex source, Vertex destination);
 
-    String getPathFromSourceToDestination(Vertex source, Vertex destination);
+    int getTotalOperationAmount();
 }

@@ -22,13 +22,13 @@ public class LoadingAnalysisServiceImpl implements LoadingAnalysisService {
 
     private Map<String, Double> chanelLoadings = new HashMap<>();
 
-    private GraphData graphData = new GraphData();
-
     private Graph graph;
+
+    private int totalOperationsAmount;
 
     public LoadingAnalysisServiceImpl(RoutingPathDataRepository routingPathDataRepository, GraphBuilderService graphBuilderService) {
         this.routingPathDataRepository = routingPathDataRepository;
-        graph = graphBuilderService.buildGraph(graphData.getVerticesAmount(), graphData.getGraphData());
+        graph = graphBuilderService.buildGraph();
     }
 
     @Override
@@ -59,7 +59,15 @@ public class LoadingAnalysisServiceImpl implements LoadingAnalysisService {
                 .mapToDouble(i -> (channelWeight.get(i) * Math.pow(channelLoading.get(i) - averageChanelLoading, 2)) / pathWeight)
                 .sum() + averageChanelLoading;
 
+        totalOperationsAmount += channelLoading.size() * 16 * 16 * 32 * 16 * 16 * 64 * 16 * 32 * 16;
         return criteria;
+    }
+
+    @Override
+    public int getTotalOperationAmount() {
+        int totalOperationsAmount = this.totalOperationsAmount;
+        this.totalOperationsAmount = 0;
+        return totalOperationsAmount;
     }
 
     private void calculateChanelLoading() {
@@ -70,11 +78,13 @@ public class LoadingAnalysisServiceImpl implements LoadingAnalysisService {
     }
 
     private Double getChannelLoading(String channel) {
+        increase();
         return chanelLoadings.get(channel) != null ? chanelLoadings.get(channel)
                 : chanelLoadings.get(channel.split("-")[1] + "-" + channel.split("-")[0]);
     }
 
     private List<String> getChannels(String path) {
+        increase();
         String[] vertices = path.split(" -> ");
         List<String> channels = new ArrayList<>();
         for (int i = 0; i < vertices.length - 1; i++) {
@@ -84,6 +94,7 @@ public class LoadingAnalysisServiceImpl implements LoadingAnalysisService {
     }
 
     private void updateChanelLoadingData(String v1, String v2) {
+        increase();
         String key = v2 + "-" + v1;
 
         if (chanelLoadings.containsKey(key)) {
@@ -96,5 +107,9 @@ public class LoadingAnalysisServiceImpl implements LoadingAnalysisService {
                 chanelLoadings.put(key, 1.0);
             }
         }
+    }
+
+    void increase() {
+        totalOperationsAmount++;
     }
 }

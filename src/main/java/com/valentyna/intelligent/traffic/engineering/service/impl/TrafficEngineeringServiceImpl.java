@@ -3,7 +3,6 @@ package com.valentyna.intelligent.traffic.engineering.service.impl;
 import com.valentyna.intelligent.traffic.engineering.domen.RoutingPathData;
 import com.valentyna.intelligent.traffic.engineering.graph.Graph;
 import com.valentyna.intelligent.traffic.engineering.graph.Vertex;
-import com.valentyna.intelligent.traffic.engineering.panel.GraphData;
 import com.valentyna.intelligent.traffic.engineering.repository.RoutingPathDataRepository;
 import com.valentyna.intelligent.traffic.engineering.service.GraphBuilderService;
 import com.valentyna.intelligent.traffic.engineering.service.LoadingAnalysisService;
@@ -24,9 +23,9 @@ public class TrafficEngineeringServiceImpl implements TrafficEngineeringService 
 
     private final RoutingPathDataRepository routingPathDataRepository;
 
-    private GraphData graphData = new GraphData();
-
     private final Graph graph;
+
+    private int totalOperationsAmount = 0;
 
     public TrafficEngineeringServiceImpl(LoadingAnalysisService loadingAnalysisService,
                                          RoutingAnalysisService routingAnalysisService,
@@ -35,16 +34,18 @@ public class TrafficEngineeringServiceImpl implements TrafficEngineeringService 
         this.loadingAnalysisService = loadingAnalysisService;
         this.routingAnalysisService = routingAnalysisService;
         this.routingPathDataRepository = routingPathDataRepository;
-        this.graph = graphBuilderService.buildGraph(graphData.getVerticesAmount(), graphData.getGraphData());
+        this.graph = graphBuilderService.buildGraph();
     }
 
     @Override
-    public String getPathFromSourceToDestination(Vertex source, Vertex destination) {
+    public String startTrafficEngineering (Vertex source, Vertex destination) {
+        long startTime = System.nanoTime();
         String path = findPathInController(source, destination);
 
         RoutingPathData routingPathData = routingPathDataRepository.findByPath(path).orElse(null);
 
         if (routingPathData == null) {
+            totalOperationsAmount++;
             routingPathData = createNewRoutingData(path, source, destination);
             routingPathData = routingPathDataRepository.save(routingPathData);
         }
@@ -52,8 +53,11 @@ public class TrafficEngineeringServiceImpl implements TrafficEngineeringService 
         loadingAnalysisService.performLoadingDataAnalysis();
         routingPathData.setLoading(loadingAnalysisService.calculateLoadCriterion(path));
         routingPathDataRepository.save(routingPathData);
+        totalOperationsAmount += loadingAnalysisService.getTotalOperationAmount();
 
-        System.out.println(path);
+//        String result = "[" + path + "]" + " \n1) Time complexity = " + totalOperationsAmount + Math.log(totalOperationsAmount)
+//                + "\n2) Performance time: " + (System.nanoTime() - startTime);
+        totalOperationsAmount = 0;
         return path;
     }
 
@@ -67,6 +71,7 @@ public class TrafficEngineeringServiceImpl implements TrafficEngineeringService 
                 .orElse(null);
 
         if (routingPathData != null) {
+            totalOperationsAmount++;
             return routingPathData.getPath();
         }
 
@@ -79,11 +84,13 @@ public class TrafficEngineeringServiceImpl implements TrafficEngineeringService 
                 .orElse(null);
 
         if (path != null) {
+            totalOperationsAmount++;
             return path;
         }
 
         // if source does not exist, perform new analysis and try again
         routingAnalysisService.performRoutingDataAnalysis(source, destination);
+        totalOperationsAmount += routingAnalysisService.getTotalOperationAmount();
         return findPathInController(source, destination);
     }
 

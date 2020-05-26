@@ -5,4 +5,6 @@ public interface LoadingAnalysisService {
     void performLoadingDataAnalysis();
 
     double calculateLoadCriterion(String path);
+
+    int getTotalOperationAmount();
 }

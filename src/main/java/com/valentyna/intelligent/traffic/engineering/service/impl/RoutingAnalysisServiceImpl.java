@@ -4,7 +4,6 @@ import com.valentyna.intelligent.traffic.engineering.domen.RoutingPathData;
 import com.valentyna.intelligent.traffic.engineering.graph.AdjacencyVertices;
 import com.valentyna.intelligent.traffic.engineering.graph.Graph;
 import com.valentyna.intelligent.traffic.engineering.graph.Vertex;
-import com.valentyna.intelligent.traffic.engineering.panel.GraphData;
 import com.valentyna.intelligent.traffic.engineering.repository.RoutingPathDataRepository;
 import com.valentyna.intelligent.traffic.engineering.service.GraphBuilderService;
 import com.valentyna.intelligent.traffic.engineering.service.RoutingAnalysisService;
@@ -27,14 +26,15 @@ public class RoutingAnalysisServiceImpl implements RoutingAnalysisService {
     private Vertex source;
     private Vertex destination;
     private List<Vertex> queue = new ArrayList<>();
-    private GraphData graphData = new GraphData();
+    private int totalOperationsAmount;
 
     private final RoutingPathDataRepository routingDataRepository;
 
     public RoutingAnalysisServiceImpl(RoutingPathDataRepository routingDataRepository,
                                       GraphBuilderService graphBuilderService) {
         this.routingDataRepository = routingDataRepository;
-        this.graph = graphBuilderService.buildGraph(graphData.getVerticesAmount(), graphData.getGraphData());
+        this.graph = graphBuilderService.buildGraph();
+        this.totalOperationsAmount = 0;
     }
 
     public void init(Vertex source, Vertex destination) {
@@ -71,7 +71,16 @@ public class RoutingAnalysisServiceImpl implements RoutingAnalysisService {
         }
     }
 
+    @Override
+    public int getTotalOperationAmount() {
+        int totalOperationsAmount = this.totalOperationsAmount;
+        this.totalOperationsAmount = 0;
+        return totalOperationsAmount;
+    }
+
+
     private List<RoutingPathData> gatherRoutingPathInformation(AdjacencyVertices adjacencyVertices, Vertex currentVertex) {
+        increase();
         List<RoutingPathData> pathInfoList = new ArrayList<>();
 
         Set<Vertex> possibleAdjVertex = Stream.of(adjacencyVertices.getCurrentVertices(), adjacencyVertices.getPreviousVertices())
@@ -82,6 +91,7 @@ public class RoutingAnalysisServiceImpl implements RoutingAnalysisService {
                 .filter(v -> !isVisitedAdjacencyVertex(currentVertex, v))
                 .collect(Collectors.toSet());
 
+        increase();
         possibleAdjVertex.stream()
                 .filter(v -> tableIsPresent(getControllerId(v)))
                 .forEach(v -> pathInfoList.add(createRoutingPathData(currentVertex, v)));
@@ -94,6 +104,7 @@ public class RoutingAnalysisServiceImpl implements RoutingAnalysisService {
     }
 
     private RoutingPathData createRoutingPathData(Vertex currentVertex, Vertex adjVertex) {
+        increase();
         String path = getShortestPathFromVertexToDestination(currentVertex, adjVertex);
         return RoutingPathData.builder()
                 .controllerId(getControllerId(currentVertex))
@@ -106,6 +117,7 @@ public class RoutingAnalysisServiceImpl implements RoutingAnalysisService {
     }
 
     private double getPathWeight(String path) {
+        increase();
         String[] vertices = path.split(" -> ");
         return IntStream.range(0, vertices.length - 1)
                 .mapToDouble(i -> this.graph.getEdgesWeights().get(vertices[i] + "-" + vertices[i + 1]))
@@ -113,6 +125,7 @@ public class RoutingAnalysisServiceImpl implements RoutingAnalysisService {
     }
 
     private String getShortestPathFromVertexToDestination(Vertex currentVertex, Vertex adjVertex) {
+        increase();
         if (isDestinationVertex(adjVertex)) {
             return currentVertex.getLabel() + " -> " + adjVertex.getLabel();
         }
@@ -125,6 +138,7 @@ public class RoutingAnalysisServiceImpl implements RoutingAnalysisService {
     }
 
     private String getShortestPathInRoutingTable(Set<RoutingPathData> routingPathDataList) {
+        increase();
         return routingPathDataList.stream()
                 .min(Comparator.comparing(RoutingPathData::getWeight))
                 .get()
@@ -136,10 +150,12 @@ public class RoutingAnalysisServiceImpl implements RoutingAnalysisService {
     }
 
     private AdjacencyVertices getFirstAdjacencyVertices() {
+        increase();
         return new AdjacencyVertices(1, Set.of(this.destination), new HashSet<>());
     }
 
     private AdjacencyVertices getNextAdjacencyVertices(AdjacencyVertices vertices) {
+        increase();
         Set<Vertex> nextVertices = vertices.getCurrentVertices().stream()
                 .map(v -> this.graph.getAdjacencyVertices().get(v))
                 .flatMap(Collection::stream)
@@ -169,6 +185,7 @@ public class RoutingAnalysisServiceImpl implements RoutingAnalysisService {
     }
 
     private boolean sourceNotReached(AdjacencyVertices nextVertices) {
+        increase();
         return !nextVertices.getPreviousVertices().contains(source);
     }
 
@@ -176,10 +193,7 @@ public class RoutingAnalysisServiceImpl implements RoutingAnalysisService {
         return Integer.parseInt(vertex.getLabel().substring(1));
     }
 
-    @Override
-    public String getPathFromSourceToDestination(Vertex source, Vertex destination) {
-        Set<RoutingPathData> routingPathDataList = routingDataRepository.findAllByControllerId(getControllerId(source));
-        String shortestPath = getShortestPathInRoutingTable(routingPathDataList);
-        return String.join(", ", shortestPath);
+    private void increase() {
+        this.totalOperationsAmount++;
     }
 }

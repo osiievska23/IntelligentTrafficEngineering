@@ -4,5 +4,5 @@ import com.valentyna.intelligent.traffic.engineering.graph.Vertex;
 
 public interface TrafficEngineeringService {
 
-    String getPathFromSourceToDestination(Vertex source, Vertex destination);
+    String startTrafficEngineering(Vertex source, Vertex destination);
 }
