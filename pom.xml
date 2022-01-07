@@ -21,7 +21,7 @@
         <jung-graph-impl.version>2.0.1</jung-graph-impl.version>
         <jung-visualization.version>2.0</jung-visualization.version>
         <jgraph.version>5.13.0.0</jgraph.version>
-        <h2.version>1.4.200</h2.version>
+        <h2.version>2.0.206</h2.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <spring.version>3.2.3.RELEASE</spring.version>
     </properties>
